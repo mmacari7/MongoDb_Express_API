@@ -4,10 +4,6 @@
 // Sets collections to the collections file
 const mongo = require("mongodb")
 const collections = require("./collections")
-const postsData = require("./posts")
-
-// Stores posts collection function into posts
-const posts = collections.posts
 
 // Stores the animals collection function in animals
 const animals = collections.animals
@@ -20,9 +16,10 @@ const exportedMethods = {
         if(!name || !animalType){
             throw("Error animals.create: One or both parameters passed are not defined")
         }
-        if(typeof name !== 'string' || !name instanceof String || typeof animalType !== 'string' || !animalType instanceof String){
+        if(typeof name !== 'string'  || typeof animalType !== 'string'){
             throw("Error animals.create: One or both parameters are not of type string")
         }
+
         // Gets the animal collection
         const animalCollection = await animals()
 
@@ -139,11 +136,10 @@ const exportedMethods = {
         }
 
         // Get the animal at ID
-        const animal = await this.get(newId)
+        const animalBeingRemoved = await this.get(newId)
 
-        // TODO!!!!!:::::::::
-        // Also delete all posts by this animal
-
+        // Delete all posts by animal
+        await this.deleteAllPostsByAnimal(animalBeingRemoved)
 
         // Attempt deletion
         const deletionInfo = await animalCollection.removeOne({_id: newId})
@@ -152,8 +148,8 @@ const exportedMethods = {
         if(deletionInfo.deletedCount === 0){
             throw("Error animals.remove: Could not delete animal")
         }
-
-        return({"deleted": true, "data": animal})
+        
+        return({"deleted": true, "data": animalBeingRemoved})
 
     },
 
@@ -165,7 +161,7 @@ const exportedMethods = {
 
         // Checks that the input animalId is string or object
         if(typeof(animalId) !== 'string' && typeof animalId !== 'object'){
-            throw("Error animals.remove: Invalid ID type")
+            throw("Error animals.updateAnimal: AnimalId is not of correct type")
         }
 
         // Checks that a JSON was passed
@@ -233,7 +229,13 @@ const exportedMethods = {
             _id: newId
         }
         // Perform the update
-        const updateInfo = await animalCollection.updateOne(query, updateCommand)
+        let updateInfo
+        try{
+            updateInfo = await animalCollection.updateOne(query, updateCommand)
+        }
+        catch(e){
+            throw("Could not perform update, possible incorrect field")
+        }
 
         // If nothing was updated throw
         if(updateInfo.modifiedCount === 0){
@@ -243,15 +245,51 @@ const exportedMethods = {
         // Return the newly updated animal at the ID
         return(await this.get(newId))
     },
-
-    // Adds a liked post ID to the animals likes array
-    async addLikeToAnimal(animalId, postId){
-        return
-    },
     
-    // Removes a liked post ID from the animals likes array
-    async removeLikeFromAnimal(animalId, postId){
+    // Function to add post to animal array
+    async addPostToAnimal(animalId, postId, postTitle){
+
+        let animalCollection = await animals()
+        let updateInfo = await animalCollection.updateOne({_id: animalId}, {$addToSet: {posts: postId}})
+
+        if(updateInfo.modifiedCount === 0){
+            throw("Error animals.addPostToAnimal: Could not add the post to the animal")
+        }
+
+        // Return the updated animal
+        return(await this.get(animalId))
+
+    },
+
+    // Function to remove post from animal array
+    async removePostFromAnimal(animalId, postId){
+        let animalCollection = await animals()
+        let updateInfo = await animalCollection.updateOne({_id: animalId}, {$pull: {posts: postId}})
+
+        if(updateInfo.modifiedCount === 0){
+            throw("Error animals.removePostFromAnimal: Could not remove post from animal")
+        }
+
+        // Return the updated animal
+        return(await this.get(animal))
+    },
+
+    async deleteAllPostsByAnimal(animal){
+        // Get the posts collection
+        const postsCollection = await collections.posts()
+        
+        if(animal.posts.length > 0){
+            for(let i=0; i < animal.posts.length; i++){
+                let delPost = await postsCollection.removeOne({_id: animal.posts[i]})
+                
+                if(delPost.deletedCount === 0){
+                    throw("Error animal.deleteAllPostsByAnimal: Could not delete posts")
+                }
+            }
+        }
+
         return
+
     }
 
 }

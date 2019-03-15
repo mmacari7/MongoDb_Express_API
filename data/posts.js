@@ -9,9 +9,6 @@ const animalsData = require("./animals")
 // Stores the posts collection function in posts
 const posts = collections.posts
 
-// Stores the animals collection function in animals
-const animals = collections.animals
-
 // Exports functions for the posts db
 const exportedMethods = {
     // Function to create and insert a new post into the posts database
@@ -29,19 +26,19 @@ const exportedMethods = {
         const postsCollection = await posts()
         
         // Check that posterId is in animals data base
-        let x = await animalsData.getAll()
-        console.log(x)
-        return
-        
-        //let animalPoster = await animalsData.get(posterId)
-        console.log(animalPoster)
-
+        let animalPoster
+        try{
+            animalPoster = await animalsData.get(posterId)
+        }
+        catch(e){
+            throw(e)
+        }
 
         // Creates a new post object for insertion based on schema provided
         let newPost = {
             title: title,
-            author: animalPoster._id,
-            content: content
+            content: content,
+            author: animalPoster._id
         }
 
         // Gets the insertion info
@@ -55,6 +52,11 @@ const exportedMethods = {
         const newId = insertInfo.insertedId
 
         const post = await this.readPostByID(newId)
+
+        // Call the function to insert the post into the animals posts array
+        // Returns the updated animal
+        let updatedAnimal = await animalsData.addPostToAnimal(animalPoster._id, post._id, post.title)
+
         return(post)
 
     },
@@ -149,22 +151,123 @@ const exportedMethods = {
         
         // Get the post at ID
         const post = await this.readPostByID(newId)
+        const animalWhoPosted = await animalsData.get(post.author)
+
+        postDataBeingRemoved = {
+            _id: post._id,
+            title: post.title,
+            content: post.content,
+            author: {
+                _id: post.author,
+                name: animalWhoPosted.name
+            }
+        }
 
         // Attempt deletion
         const deletionInfo = await postsCollection.removeOne({_id: newId})
+        const a = await animalsData.removePostFromAnimal(animalWhoPosted._id, post._id)
 
         if(deletionInfo.deletedCount === 0){
             throw("Error posts.deletePost: Could not delete post")
         }
         
         // Return deleted information similar to animals
-        return({"deleted": true, "data": post})
+        return({"deleted": true, "data": postDataBeingRemoved})
     },
 
-    async updatePost(){
-        return
-    }
+    async updatePost(postId, newPostJson){
+        // Check ID definition
+        if(!postId){
+            throw("Error posts.updatePost: postId was not defined")
+        }
 
+        // Checks that the input postId is string or object
+        if(typeof(postId) !== 'string' && typeof postId !== 'object'){
+            throw("Error posts.updatePost: PostId is not of correct type")
+        }
+
+        // Checks that a JSON was passed
+        if(!newPostJson || newPostJson === undefined){
+            throw("Error post.updatePost: postJson was not defined")
+        }
+
+        // Checks that there is at least one defined type
+        if(!newPostJson.newTitle && !newPostJson.newContent){
+            throw("Error posts.updatePosts: postsJson has incorrect schema")
+        }
+
+        // Local variable to retrieve the updated JSON
+        let updatedPostsData = {}
+
+        // If we have a newTitle to update
+        if(newPostJson.newTitle){
+            // But the new title is not of correct type
+            if(typeof newPostJson.newTitle !== 'string'){
+                throw("Error posts.updatePosts: postJSON.newTitle is not of type string")
+            }
+            // Set the updating data newTitle to that of the JSON
+            updatedPostsData.title = newPostJson.newTitle
+        }
+        // If we have a type to update
+        if(newPostJson.newContent){
+            // But the new type is not of correct type
+            if(typeof newPostJson.newContent !== 'string'){
+                throw("Error posts.updatePosts: newPostsJson.newContent is not of type string")
+            }
+
+            // Set the updating data newType to that of the JSON
+            updatedPostsData.content = newPostJson.newContent
+        }
+
+        // Get the animals
+        const postsCollection = await posts()
+
+        // Convert the id string to a mongo ObjectID in try catch if not object
+        let newId
+        if(typeof(postId) !== 'object'){
+            
+            try{
+                newId = new mongo.ObjectID(postId)
+            }
+            catch(e){
+                throw("Error posts.getPost: Invalid ID")
+            }
+        }
+        else{
+            newId = postId
+        }
+
+        // Get the animal to be updated
+        let post = await this.readPostByID(newId)
+
+
+        // Made it past all intial error checks
+        // Creates the update command
+        let updateCommand = {
+            $set: updatedPostsData
+        }
+
+        const query = {
+            _id: newId
+        }
+        // Perform the update
+        let updateInfo
+        try{
+            updateInfo = await postsCollection.updateOne(query, updateCommand)
+        }
+        catch(e){
+            throw("Error posts.updatePost: Could not perform update, possible incorrect field")
+        }
+        
+
+        // If nothing was updated throw
+        if(updateInfo.modifiedCount === 0){
+            throw("Error posts.updatePost: Could not update posts, possible duplicate")
+        }
+
+        // Return the newly updated post at the ID
+        return(await this.readPostByID(newId))
+    }
 }
 
 module.exports = exportedMethods
