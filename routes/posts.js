@@ -90,7 +90,7 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
     const postInfo = req.body
     if(!postInfo || postInfo === undefined) {
-        res.status(400).json({error: "You must provide data to update the post"});
+        res.status(400).json({error: "You must provide data to update the post"})
         return
     }   
 
@@ -141,6 +141,36 @@ router.put("/:id", async (req, res) => {
         res.status(200).json(updatedPost)
     } 
     catch (e) {
+        res.status(500).send(e)
+    }
+})
+
+// Delete function for posts router
+router.delete("/:id", async (req, res) => {
+    // Try to get the post
+    let postForDelete
+
+    try{
+        // Store the post that is going to be deleted
+        postForDelete = await postsData.readPostByID(req.params.id)
+    }
+    // If we cannot get the post then send an error
+    catch(e) {
+        res.status(404).json({error: "Post not found in db" })
+        return
+    }
+
+    // Try to delete the post
+    try {
+        // Get the deletion information
+        let delInfo = await postsData.deletePost(req.params.id)
+
+        // Update author of post in del info to display author id and name
+        delInfo.data.author = await getAuthorName(delInfo.data.author._id)
+        res.status(200).json(delInfo)
+    }
+    // If we cannot send internal error status
+    catch(e) {
         res.status(500).send(e)
     }
 })

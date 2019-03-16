@@ -9,7 +9,7 @@ const settings = {
         serverUrl: "mongodb://localhost:27017/",
         database: "Michael_Macari_lab7"
     }
-};
+}
 
 let _connection = undefined
 let _db = undefined
@@ -23,4 +23,3 @@ module.exports = async () => {
     // Return an instance of the database
     return(_db)
 }
-

@@ -162,6 +162,7 @@ const exportedMethods = {
                 name: animalWhoPosted.name
             }
         }
+        
 
         // Attempt deletion
         const deletionInfo = await postsCollection.removeOne({_id: newId})

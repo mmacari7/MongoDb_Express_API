@@ -16,8 +16,8 @@ const getCollectionFn = collection => {
         }
         // Returns the collection
         return _col
-    };
-};
+    }
+}
 
 // Exports the collection "animals" and sets to animals
 // Exports the collection "posts" and sets to posts

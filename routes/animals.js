@@ -21,7 +21,6 @@ const postsArrayToIdTitle = async (postsArray) => {
         // Append the new object to the new animals posts array
         newArr.push(idTitle)
     }
-    
     // Return the new array
     return(newArr)
 }
@@ -39,7 +38,7 @@ router.get("/:id", async (req, res) => {
         res.json(animal)
     } 
     catch (e) {
-        res.status(404).json({ error: "Animal not found" })
+        res.status(404).json({error: "Animal not found" })
     }
 })
 
@@ -99,7 +98,7 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
     const animalInfo = req.body
     if(!animalInfo || animalInfo === undefined) {
-        res.status(400).json({error: "You must provide data to update an animal"});
+        res.status(400).json({error: "You must provide data to update an animal"})
         return
     }   
 
@@ -133,7 +132,7 @@ router.put("/:id", async (req, res) => {
 
     // Try the ID requested
     try {
-        await animalsData.get(req.params.id);
+        await animalsData.get(req.params.id)
     } 
     catch (e) {
         res.status(404).json({error: "Animal not found" })

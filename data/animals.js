@@ -271,7 +271,7 @@ const exportedMethods = {
         }
 
         // Return the updated animal
-        return(await this.get(animal))
+        return(await this.get(animalId))    
     },
 
     async deleteAllPostsByAnimal(animal){

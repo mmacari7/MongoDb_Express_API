@@ -11,4 +11,4 @@ module.exports = {
   posts: postsData,
   connection: connectionData,
   collections: collectionsData
-};
+}
