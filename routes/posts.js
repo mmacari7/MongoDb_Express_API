@@ -1,10 +1,11 @@
 // Michael Macari
-// Animals Route
+// Posts Route
 const express = require("express")
 const router = express.Router()
 const data = require("../data")
 const postsData = data.posts
 const animalsData = data.animals
+const likesData = data.likes
 
 // Function similar to animals, takes in author Id and returns the author and the title of the post
 // Works so if the animal at author ID is updated or changed, the changes are returned as well
@@ -27,6 +28,7 @@ router.get("/:id", async (req, res) => {
     } 
     catch (e) {
         res.status(404).json({error: "Post not found"})
+        return
     }
 })
 
@@ -44,6 +46,7 @@ router.get("/", async (req, res) => {
     } 
     catch (e) {
         res.status(500).send(e)
+        return
     }
 })
 
@@ -58,6 +61,7 @@ router.post("/", async (req, res) => {
 
     if(!postInfo.title && !postInfo.author && !postInfo.content){
         res.status(400).json({error: "Incorrect schema"})
+        return
     }
   
     if (!postInfo.title) {
@@ -72,6 +76,7 @@ router.post("/", async (req, res) => {
 
     if(!postInfo.author){
         res.status(400).json({error: "You must provide an author for the post"})
+        return
     }
   
     try {
@@ -83,6 +88,7 @@ router.post("/", async (req, res) => {
     } 
     catch (e) {
         res.status(500).send(e)
+        return
     }
 })
 
@@ -142,6 +148,7 @@ router.put("/:id", async (req, res) => {
     } 
     catch (e) {
         res.status(500).send(e)
+        return
     }
 })
 
@@ -162,16 +169,19 @@ router.delete("/:id", async (req, res) => {
 
     // Try to delete the post
     try {
+        // Remove Likes
+        await likesData.removeAllAnimalLikesForPost(postForDelete._id)
         // Get the deletion information
         let delInfo = await postsData.deletePost(req.params.id)
-
         // Update author of post in del info to display author id and name
         delInfo.data.author = await getAuthorName(delInfo.data.author._id)
         res.status(200).json(delInfo)
     }
+
     // If we cannot send internal error status
     catch(e) {
         res.status(500).send(e)
+        return
     }
 })
 

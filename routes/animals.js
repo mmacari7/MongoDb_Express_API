@@ -5,13 +5,14 @@ const router = express.Router()
 const data = require("../data")
 const animalsData = data.animals
 const postsData = data.posts
+const likesData = data.likes
 
 // This function is so when a post is updated, the post title if changed will also change when animals are get
 // Creates a function that converts an array of post ID's to an array of {_id: id, title: title}
 const postsArrayToIdTitle = async (postsArray) => {
     let newArr = []
     for(let i=0; i < postsArray.length; i++){
-        //Get the titles
+        // Get the titles
         let curPost = await postsData.readPostByID(postsArray[i])
         // Create the new object
         let idTitle = {
@@ -32,13 +33,20 @@ router.get("/:id", async (req, res) => {
         // If the animal post array has anything in it
         if(animal.posts.length > 0){
             // Set animals array to posts so JSON returned has proper format
-
             animal.posts = await postsArrayToIdTitle(animal.posts)  
         }
+
+        // If the animals likes array has anything in it
+        if(animal.likes.length > 0){
+            // Set the animals likes array to JSON returned with proper format
+            animal.likes = await postsArrayToIdTitle(animal.likes)
+        }
+
         res.json(animal)
     } 
     catch (e) {
         res.status(404).json({error: "Animal not found" })
+        return
     }
 })
 
@@ -53,12 +61,18 @@ router.get("/", async (req, res) => {
             if(animalsList[i].posts.length > 0){
                 animalsList[i].posts = await postsArrayToIdTitle(animalsList[i].posts)
             }
+            // Call the function if likes array has length
+            if(animalsList[i].likes.length > 0){
+                animalsList[i].likes = await postsArrayToIdTitle(animalsList[i].likes)
+            }
+
         }
 
         res.json(animalsList)
     } 
     catch (e) {
         res.status(500).send(e)
+        return
     }
 })
 
@@ -73,6 +87,7 @@ router.post("/", async (req, res) => {
 
     if(!animalInfo.name && !animalInfo.animalType){
         res.status(400).json({error: "Incorrect schema"})
+        return
     }
   
     if (!animalInfo.name) {
@@ -91,6 +106,7 @@ router.post("/", async (req, res) => {
     } 
     catch (e) {
         res.status(500).send(e)
+        return
     }
 })
 
@@ -146,10 +162,15 @@ router.put("/:id", async (req, res) => {
         if(updatedAnimal.posts.length > 0){
             updatedAnimal.posts = await postsArrayToIdTitle(updatedAnimal.posts)
         }
+        // Check if the updated animal has likes, if so, get the id and names
+        if(updatedAnimal.likes.length > 0){
+            updatedAnimal.likes = await postsArrayToIdTitle(updatedAnimal.likes)
+        }
         res.status(200).json(updatedAnimal)
     } 
     catch (e) {
         res.status(500).send(e)
+        return
     }
 })
 
@@ -158,9 +179,22 @@ router.delete("/:id", async (req, res) => {
     // Try to get the animal
     let animalForDelete
     let postsArr = []
+    let likesArr = []
+    
     try{
         // Store the animal that is going to be deleted
         animalForDelete = await animalsData.get(req.params.id)
+        
+        // Remove all likes of posts animal has created before removing everything else
+        for(let i=0; i < animalForDelete.posts.length; i++){
+            await likesData.removeAllAnimalLikesForPost(animalForDelete.posts[i])
+        }
+
+        // Format the likes array before we delete the animal so we can display deletion properly
+        if(animalForDelete.likes.length > 0){
+            likesArr = await postsArrayToIdTitle(animalForDelete.likes)
+        }
+
         // Format the posts array before we delete the animal, so we can display deltion info properly
         if(animalForDelete.posts.length > 0){
             postsArr = await postsArrayToIdTitle(animalForDelete.posts)    
@@ -177,6 +211,9 @@ router.delete("/:id", async (req, res) => {
         // Get the deltion information
         let delInfo = await animalsData.remove(req.params.id)
 
+        // Store the likesArr after manipulation into the deletion info
+        delInfo.data.likes = likesArr
+
         // Similarly to the above, store the posts we generated into the deltion info of the animal
         delInfo.data.posts = postsArr
         
@@ -185,6 +222,7 @@ router.delete("/:id", async (req, res) => {
     // If we cannot send internal error status
     catch(e) {
         res.status(500).send(e)
+        return
     }
 })
 

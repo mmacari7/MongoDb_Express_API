@@ -55,7 +55,7 @@ const exportedMethods = {
 
         // Call the function to insert the post into the animals posts array
         // Returns the updated animal
-        let updatedAnimal = await animalsData.addPostToAnimal(animalPoster._id, post._id, post.title)
+        let updatedAnimal = await animalsData.addPostToAnimal(animalPoster._id, post._id)
 
         return(post)
 

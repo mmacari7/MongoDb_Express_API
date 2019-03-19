@@ -247,7 +247,7 @@ const exportedMethods = {
     },
     
     // Function to add post to animal array
-    async addPostToAnimal(animalId, postId, postTitle){
+    async addPostToAnimal(animalId, postId){
 
         let animalCollection = await animals()
         let updateInfo = await animalCollection.updateOne({_id: animalId}, {$addToSet: {posts: postId}})
@@ -271,7 +271,7 @@ const exportedMethods = {
         }
 
         // Return the updated animal
-        return(await this.get(animalId))    
+        return(await this.get(animalId))
     },
 
     async deleteAllPostsByAnimal(animal){
