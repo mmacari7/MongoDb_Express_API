@@ -7,7 +7,7 @@
     "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Michael Macari 10432224",
+  "author": "Michael Macari",
   "license": "ISC",
   "dependencies": {
     "body-parser": "^1.18.3",
